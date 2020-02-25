@@ -43,7 +43,7 @@ resource "aws_rds_cluster" "this" {
   master_username                     = var.username
   master_password                     = local.master_password
   final_snapshot_identifier           = "${var.final_snapshot_identifier_prefix}-${var.name}-${random_id.snapshot_identifier.hex}"
-  skip_final_snapshot                 = var.skip_final_snapshot
+  skip_final_snapshot                 = true
   deletion_protection                 = var.deletion_protection
   backup_retention_period             = var.backup_retention_period
   preferred_backup_window             = var.preferred_backup_window
@@ -51,7 +51,6 @@ resource "aws_rds_cluster" "this" {
   port                                = local.port
   db_subnet_group_name                = local.db_subnet_group_name
   vpc_security_group_ids              = compact(concat(aws_security_group.this.*.id, var.vpc_security_group_ids))
-  snapshot_identifier                 = var.snapshot_identifier
   storage_encrypted                   = var.storage_encrypted
   apply_immediately                   = var.apply_immediately
   db_cluster_parameter_group_name     = var.db_cluster_parameter_group_name
@@ -59,6 +58,13 @@ resource "aws_rds_cluster" "this" {
   backtrack_window                    = local.backtrack_window
   copy_tags_to_snapshot               = var.copy_tags_to_snapshot
   iam_roles                           = var.iam_roles
+
+  s3_import {
+    source_engine         = "mysql"
+    source_engine_version = "5.6"
+    bucket_name           = "mhaurorabucket"
+    ingestion_role        = "arn:aws:iam::725595387395:role/mh-administrator"
+  }
 
   enabled_cloudwatch_logs_exports = var.enabled_cloudwatch_logs_exports
 
@@ -97,6 +103,7 @@ resource "aws_rds_cluster_instance" "this" {
   promotion_tier                  = count.index + 1
   performance_insights_enabled    = var.performance_insights_enabled
   performance_insights_kms_key_id = var.performance_insights_kms_key_id
+
 
   tags = var.tags
 }
